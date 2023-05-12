@@ -1,6 +1,7 @@
-version: 2
+version: 2.1
+
 jobs:
-  build:
+  laravel-job:
     docker:
       # Specify the version you desire here
       - image: circleci/php:7.3-stretch-node-browsers
@@ -54,3 +55,8 @@ jobs:
       # prepare the database
       - run: touch storage/testing.sqlite
       - run: php artisan migrate --env=testing --database=sqlite_testing --force
+
+workflows:
+  my-workflow:
+    jobs:
+      - laravel-job
