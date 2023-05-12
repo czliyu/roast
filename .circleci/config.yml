@@ -33,8 +33,8 @@ jobs:
 
       - run:
           name: Setup Laravel stuffs
-          command: |
-            php artisan migrate
+          command:
+            php artisan migrate --force
       - run: ./vendor/bin/phpunit
 
 workflows:
