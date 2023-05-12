@@ -20,7 +20,8 @@ jobs:
 
     steps:
       - checkout
-      - run: sudo apt install -y mysql-client
+      - run: sudo docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+      - run: sudo apt install -y defalut-mysql-client
       - run: sudo composer self-update
       - restore_cache:
           keys:
