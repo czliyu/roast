@@ -1,66 +1,58 @@
-version: 2
-
+version: 2.1
+orbs:
+  browser-tools: circleci/browser-tools@1.1
 jobs:
   build:
     docker:
-      - image: circleci/php:7.1-node-browsers
-        environment:
-            MYSQL_HOST: 127.0.0.1
-            MYSQL_DB: roast
-            MYSQL_USER: root
-            MYSQL_ALLOW_EMPTY_PASSWORD: true
-            MYSQL_PASSWORD: ""
-      - image: mysql:5.7
-        command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_bin --innodb-large-prefix=true --innodb-file-format=Barracuda
-        environment:
-            MYSQL_USER: root
-            MYSQL_ALLOW_EMPTY_PASSWORD: true
-
-    working_directory: ~/roast
+      # Specify the version you desire here
+      - image: cimg/php:7.4.14-browsers
 
     steps:
+      - browser-tools/install-browser-tools
       - checkout
-      - run: sudo apt install -y libsqlite3-dev zlib1g-dev
-      - run: sudo apt install -y mysql-client
-      - run: sudo docker-php-ext-install zip
-      - run: sudo docker-php-ext-install pdo_mysql
-      - run: sudo composer self-update
+
+      - run:
+          name: "Create Environment file and generate app key"
+          command: |
+            mv .env.testing .env
+
+      # Download and cache dependencies
       - restore_cache:
           keys:
-              - composer-v1-{{ checksum "composer.lock" }}
-              - composer-v1-
-      - run: mv .env.testing .env
-      - run: composer install -n --ignore-platform-reqs
+            # "composer.lock" can be used if it is committed to the repo
+            - v1-dependencies-{{ checksum "composer.json" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run:
+          name: "Install Dependencies"
+          command: composer install -n --prefer-dist
+
       - save_cache:
-          key: composer-v1-{{ checksum "composer.lock" }}
+          key: v1-dependencies-{{ checksum "composer.json" }}
           paths:
-              - vendor
-      - restore_cache: # special step to restore the dependency cache if `package.json` does not change
-          keys:
-              - node-v1-{{ checksum "package.json" }}
-              # fallback to using the latest cache if no exact match is found (See https://circleci.com/docs/2.0/caching/)
-              - node-v1-
-      - run: npm install
-      - save_cache: # special step to save the dependency cache with the `package.json` cache key template
-          key: node-v1-{{ checksum "package.json" }}
-          paths:
-              - node_modules
-      - run: npm run production
+            - ./vendor
+
+      # prepare the database
       - run:
-          name: Mysql database
-          command: mysql -h 127.0.0.1 -u root -e "create database roast;"
-      - run: php artisan key:generate
-      - run: php artisan migrate
-      - run: php artisan passport:install
+          name: "Generate App key"
+          command: php artisan key:generate
+
       - run:
-          name: Run Laravel Server
-          command: php artisan serve
-          background: true
-      - run: vendor/bin/phpunit
+          name: "Install sqlite"
+          command: sudo apt-get install php7.4-sqlite3
+
       - run:
-          name: Start Chrome Driver
-          command: ./vendor/laravel/dusk/bin/chromedriver-linux
-          background: true
+          name: "Create database and run migration"
+          command: |
+            touch database/database.sqlite
+            php artisan migrate --env=testing
+
       - run:
-          name: Run Laravel Dusk Tests
-          command: php artisan dusk
+          name: "Generate Passport encryption keys"
+          command: php artisan passport:install
+
+      # run tests with phpunit
+      - run:
+          name: "Run Tests"
+          command: php artisan test
