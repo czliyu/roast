@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       # Specify the version you desire here
-      - image: circleci/php:7.1-browsers
+      - image: circleci/php:7.4-browsers
       - image: circleci/mariadb:10.6
         environment:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
