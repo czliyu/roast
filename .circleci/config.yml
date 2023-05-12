@@ -34,7 +34,7 @@ jobs:
       - run:
           name: Setup Laravel stuffs
           command: |
-            php artisan migrate --force
+            php artisan migrate
       - run: ./vendor/bin/phpunit
 
 workflows:
