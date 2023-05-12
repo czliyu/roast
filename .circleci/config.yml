@@ -4,7 +4,7 @@ jobs:
   laravel-job:
     docker:
       # Specify the version you desire here
-      - image: circleci/php:7.4-stretch-node-browsers
+      - image: cimg/php:7.4.31-browsers
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
